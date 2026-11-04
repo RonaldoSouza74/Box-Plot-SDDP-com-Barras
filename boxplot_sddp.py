@@ -9,7 +9,11 @@ Mapeamento de estágios: o mês 2 do arquivo corresponde a janeiro de 2030 e o
 mês 13 a dezembro de 2030 (mês civil = estágio - 1).
 
 Uso:
-    python boxplot_sddp.py [caminho_csv] [pasta_saida]
+    python boxplot_sddp.py [caminho_csv] [pasta_saida] [titulo] [nome_pdf]
+
+Exemplo (gerter_cvarR):
+    python boxplot_sddp.py dados/gerter_cvarR_Stage-2-13.csv graficos_gerter \
+        "Geração Térmica (cenários do Curtailment)" gerter
 """
 
 import sys
@@ -103,10 +107,12 @@ def main():
     csv = Path(sys.argv[1]) if len(sys.argv) > 1 else \
         raiz / "dados" / "vergnd_cvarR_Stage-2-13.csv"
     saida = Path(sys.argv[2]) if len(sys.argv) > 2 else raiz / "graficos"
+    titulo = sys.argv[3] if len(sys.argv) > 3 else TITULO
+    nome_pdf = sys.argv[4] if len(sys.argv) > 4 else "curtailment"
     df, subsistemas, unidade = ler_csv(csv)
     (saida / "por_mes").mkdir(parents=True, exist_ok=True)
 
-    with PdfPages(saida / f"boxplots_curtailment_{ANO}.pdf") as pdf:
+    with PdfPages(saida / f"boxplots_{nome_pdf}_{ANO}.pdf") as pdf:
         for estagio, dados_mes in df.groupby("Mes"):
             m, rotulo = rotulo_mes(estagio)
             dias = dados_mes["Dia"].max()
@@ -127,7 +133,7 @@ def main():
                 ax.set_title(sub, loc="left", fontweight="bold")
             for ax in list(axes.flat)[len(ativos):]:
                 ax.set_visible(False)
-            fig.suptitle(f"{TITULO} — {rotulo}", fontsize=16, x=0.01, ha="left",
+            fig.suptitle(f"{titulo} — {rotulo}", fontsize=16, x=0.01, ha="left",
                          color=COR_TEXTO, fontweight="bold")
             fig.tight_layout(rect=(0, 0, 1, 0.95))
             fig.savefig(saida / "por_mes" / f"{prefixo}.png", dpi=110)
@@ -140,7 +146,7 @@ def main():
                 pasta.mkdir(parents=True, exist_ok=True)
                 fig, ax = plt.subplots(figsize=(10, 4.5))
                 desenhar_boxplot(ax, dados_mes, sub, unidade)
-                ax.set_title(f"{TITULO} — {rotulo} — {sub}", loc="left",
+                ax.set_title(f"{titulo} — {rotulo} — {sub}", loc="left",
                              fontweight="bold", fontsize=12)
                 fig.tight_layout()
                 fig.savefig(pasta / f"{prefixo}.png", dpi=110)

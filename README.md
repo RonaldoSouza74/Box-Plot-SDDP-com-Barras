@@ -40,3 +40,11 @@ Saídas:
 - `dados/cenarios_selecionados_Stage-2-13.csv` – cenários usados por subsistema e hora.
 - `planilhas/calculo_gerter_cvarR_Stage-2-13.xlsx` – passo a passo com fórmulas: abas Leia-me
   (com exemplos), Resumo, gerter_cvarR, Cenarios_selecionados e uma aba por subsistema.
+
+## Box plots da gerter_cvarR
+
+```bash
+python boxplot_sddp.py dados/gerter_cvarR_Stage-2-13.csv graficos_gerter "Geração Térmica (cenários do Curtailment)" gerter
+```
+
+Mesma estrutura de `graficos/`, em `graficos_gerter/` (PDF: `boxplots_gerter_2030.pdf`).
