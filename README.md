@@ -16,6 +16,6 @@ python boxplot_sddp.py dados/vergnd_cvarR_Stage-2-13.csv graficos
 
 ## Saídas (`graficos/`)
 
-- `por_mes/2030-MM_<Mês>.png` – um painel por mês com todos os 14 subsistemas.
+- `por_mes/2030-MM_<Mês>.png` – um painel por mês com os subsistemas que têm valores (os totalmente zerados são omitidos).
 - `individuais/<SUBSISTEMA>/2030-MM_<Mês>.png` – um gráfico por subsistema e mês.
-- `boxplots_vergnd_2030.pdf` – os 12 painéis mensais em um único PDF.
+- `boxplots_curtailment_2030.pdf` – os 12 painéis mensais em um único PDF.

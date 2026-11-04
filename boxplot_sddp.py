@@ -2,7 +2,8 @@
 
 Lê um arquivo de saída do SDDP (ex.: vergnd_cvarR_Stage-2-13.csv), converte a
 hora sequencial do mês (1..744) em hora do dia (1..24) e gera, para cada mês,
-box plots com as 24 horas no eixo x para todas as colunas de subsistema.
+box plots com as 24 horas no eixo x para os subsistemas com valores no mês
+(subsistemas totalmente zerados são omitidos).
 
 Mapeamento de estágios: o mês 2 do arquivo corresponde a janeiro de 2030 e o
 mês 13 a dezembro de 2030 (mês civil = estágio - 1).
@@ -22,6 +23,7 @@ import pandas as pd  # noqa: E402
 from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
 
 ANO = 2030
+TITULO = "Curtailment (Energia Renovável)"
 MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
          "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
@@ -77,12 +79,6 @@ def desenhar_boxplot(ax, dados_mes, subsistema, unidade):
     ax.set_xticklabels([str(h) for h in horas], fontsize=7)
     ax.set_xlim(0.3, 24.7)
     ax.set_xlabel("Hora do dia")
-    if (dados_mes[subsistema] == 0).all():
-        ax.text(0.5, 0.5, "Sem valores no mês (todos zero)",
-                transform=ax.transAxes, ha="center", va="center",
-                color=COR_TEXTO_2, fontsize=10)
-        ax.set_yticks([])
-        return
     series = [dados_mes.loc[dados_mes["HoraDia"] == h, subsistema].values
               for h in horas]
     ax.boxplot(
@@ -107,50 +103,51 @@ def main():
     csv = Path(sys.argv[1]) if len(sys.argv) > 1 else \
         raiz / "dados" / "vergnd_cvarR_Stage-2-13.csv"
     saida = Path(sys.argv[2]) if len(sys.argv) > 2 else raiz / "graficos"
-    nome_var = csv.stem.split("_")[0]
-
     df, subsistemas, unidade = ler_csv(csv)
     (saida / "por_mes").mkdir(parents=True, exist_ok=True)
 
-    ncols = 4
-    nrows = -(-len(subsistemas) // ncols)
-
-    with PdfPages(saida / f"boxplots_{nome_var}_{ANO}.pdf") as pdf:
+    with PdfPages(saida / f"boxplots_curtailment_{ANO}.pdf") as pdf:
         for estagio, dados_mes in df.groupby("Mes"):
             m, rotulo = rotulo_mes(estagio)
             dias = dados_mes["Dia"].max()
             prefixo = f"{ANO}-{m:02d}_{MESES[m - 1]}"
+            # Omite subsistemas sem nenhum valor diferente de zero no mês
+            ativos = [s for s in subsistemas if (dados_mes[s] != 0).any()]
+            if not ativos:
+                print(f"Estágio {estagio:>2} -> {rotulo}: sem valores, ignorado")
+                continue
 
-            # Figura com todos os subsistemas do mês
-            fig, axes = plt.subplots(nrows, ncols,
-                                     figsize=(6 * ncols, 3.6 * nrows))
-            for ax, sub in zip(axes.flat, subsistemas):
+            # Figura com os subsistemas do mês
+            ncols = min(3, len(ativos))
+            nrows = -(-len(ativos) // ncols)
+            fig, axes = plt.subplots(nrows, ncols, squeeze=False,
+                                     figsize=(7 * ncols, 4 * nrows))
+            for ax, sub in zip(axes.flat, ativos):
                 desenhar_boxplot(ax, dados_mes, sub, unidade)
                 ax.set_title(sub, loc="left", fontweight="bold")
-            for ax in list(axes.flat)[len(subsistemas):]:
+            for ax in list(axes.flat)[len(ativos):]:
                 ax.set_visible(False)
-            fig.suptitle(f"{nome_var} — {rotulo} — distribuição por hora do "
-                         f"dia ({dias} dias)", fontsize=15, x=0.01, ha="left",
+            fig.suptitle(f"{TITULO} — {rotulo}", fontsize=16, x=0.01, ha="left",
                          color=COR_TEXTO, fontweight="bold")
-            fig.tight_layout(rect=(0, 0, 1, 0.97))
+            fig.tight_layout(rect=(0, 0, 1, 0.95))
             fig.savefig(saida / "por_mes" / f"{prefixo}.png", dpi=110)
             pdf.savefig(fig)
             plt.close(fig)
 
             # Um gráfico individual por subsistema
-            for sub in subsistemas:
+            for sub in ativos:
                 pasta = saida / "individuais" / sub.replace(" ", "_").replace(".", "")
                 pasta.mkdir(parents=True, exist_ok=True)
                 fig, ax = plt.subplots(figsize=(10, 4.5))
                 desenhar_boxplot(ax, dados_mes, sub, unidade)
-                ax.set_title(f"{sub} — {rotulo} ({nome_var})", loc="left",
+                ax.set_title(f"{TITULO} — {rotulo} — {sub}", loc="left",
                              fontweight="bold", fontsize=12)
                 fig.tight_layout()
                 fig.savefig(pasta / f"{prefixo}.png", dpi=110)
                 plt.close(fig)
 
             print(f"Estágio {estagio:>2} -> {rotulo}: {len(dados_mes)} horas "
-                  f"({dias} dias)")
+                  f"({dias} dias), subsistemas: {', '.join(ativos)}")
 
     print(f"Gráficos salvos em: {saida}")
 
