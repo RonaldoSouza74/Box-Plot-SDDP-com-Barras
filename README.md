@@ -48,3 +48,12 @@ python boxplot_sddp.py dados/gerter_cvarR_Stage-2-13.csv graficos_gerter "Geraç
 ```
 
 Mesma estrutura de `graficos/`, em `graficos_gerter/` (PDF: `boxplots_gerter_2030.pdf`).
+
+## Box plots da vergnd_Distribuicao (10 cenários)
+
+```bash
+python boxplot_sddp.py dados/vergnd_Distribuicao_10cenarios_Stage-2-13.csv graficos_distribuicao "Curtailment (Energia Renovável) — 10 cenários" curtailment_10cenarios
+```
+
+Cada box reúne os valores da hora em todos os dias do mês e nos 10 cenários
+(ex.: janeiro = 31 dias × 10 cenários = 310 valores por hora). Saída em `graficos_distribuicao/`.

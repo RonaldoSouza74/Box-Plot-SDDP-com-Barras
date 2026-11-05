@@ -11,6 +11,8 @@ mês 13 a dezembro de 2030 (mês civil = estágio - 1).
 Uso:
     python boxplot_sddp.py [caminho_csv] [pasta_saida] [titulo] [nome_pdf]
 
+Cada box reúne todos os valores da hora no mês: dias x cenários (coluna 2).
+
 Exemplo (gerter_cvarR):
     python boxplot_sddp.py dados/gerter_cvarR_Stage-2-13.csv graficos_gerter \
         "Geração Térmica (cenários do Curtailment)" gerter
@@ -152,8 +154,10 @@ def main():
                 fig.savefig(pasta / f"{prefixo}.png", dpi=110)
                 plt.close(fig)
 
-            print(f"Estágio {estagio:>2} -> {rotulo}: {len(dados_mes)} horas "
-                  f"({dias} dias), subsistemas: {', '.join(ativos)}")
+            ncen = dados_mes["Seq"].nunique()
+            print(f"Estágio {estagio:>2} -> {rotulo}: {len(dados_mes)} registros "
+                  f"({dias} dias x {ncen} cenário(s)), "
+                  f"subsistemas: {', '.join(ativos)}")
 
     print(f"Gráficos salvos em: {saida}")
 
