@@ -57,3 +57,9 @@ python boxplot_sddp.py dados/vergnd_Distribuicao_10cenarios_Stage-2-13.csv grafi
 
 Cada box reúne os valores da hora em todos os dias do mês e nos 10 cenários
 (ex.: janeiro = 31 dias × 10 cenários = 310 valores por hora). Saída em `graficos_distribuicao/`.
+
+## Escala do eixo y
+
+Por padrão todos os gráficos de um mesmo arquivo (todos os subsistemas e todos os meses)
+usam a mesma escala no eixo y, de 0 ao maior valor do arquivo, para facilitar a comparação.
+Para voltar à escala própria de cada gráfico, acrescente `--escala-livre` ao comando.

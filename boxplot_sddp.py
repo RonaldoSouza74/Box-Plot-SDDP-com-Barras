@@ -10,6 +10,10 @@ mês 13 a dezembro de 2030 (mês civil = estágio - 1).
 
 Uso:
     python boxplot_sddp.py [caminho_csv] [pasta_saida] [titulo] [nome_pdf]
+                           [--escala-livre]
+
+Por padrão todos os gráficos (subsistemas e meses) usam a mesma escala no
+eixo y, de 0 ao maior valor do arquivo; --escala-livre volta à escala própria.
 
 Cada box reúne todos os valores da hora no mês: dias x cenários (coluna 2).
 
@@ -27,6 +31,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
+from matplotlib.ticker import FuncFormatter  # noqa: E402
 
 ANO = 2030
 TITULO = "Curtailment (Energia Renovável)"
@@ -79,7 +84,7 @@ def rotulo_mes(estagio):
     return m, f"{MESES[m - 1]}/{ANO}"
 
 
-def desenhar_boxplot(ax, dados_mes, subsistema, unidade):
+def desenhar_boxplot(ax, dados_mes, subsistema, unidade, ylim=None):
     horas = range(1, 25)
     ax.set_xticks(list(horas))
     ax.set_xticklabels([str(h) for h in horas], fontsize=7)
@@ -102,9 +107,18 @@ def desenhar_boxplot(ax, dados_mes, subsistema, unidade):
     ax.grid(axis="y", color=COR_GRADE, linewidth=0.6)
     ax.set_axisbelow(True)
     ax.set_ylabel(unidade)
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+        if ylim[1] >= 1000:
+            ax.yaxis.set_major_formatter(FuncFormatter(
+                lambda v, _: f"{v:,.0f}".replace(",", ".")))
 
 
 def main():
+    # --escala-livre: cada gráfico com sua própria escala no eixo y
+    escala_livre = "--escala-livre" in sys.argv
+    if escala_livre:
+        sys.argv.remove("--escala-livre")
     raiz = Path(__file__).resolve().parent
     csv = Path(sys.argv[1]) if len(sys.argv) > 1 else \
         raiz / "dados" / "vergnd_cvarR_Stage-2-13.csv"
@@ -112,6 +126,14 @@ def main():
     titulo = sys.argv[3] if len(sys.argv) > 3 else TITULO
     nome_pdf = sys.argv[4] if len(sys.argv) > 4 else "curtailment"
     df, subsistemas, unidade = ler_csv(csv)
+    # Escala comum: mesmo eixo y para todos os subsistemas e todos os meses
+    ylim = None
+    if not escala_livre:
+        vmin = min(0.0, float(df[subsistemas].min().min()))
+        vmax = float(df[subsistemas].max().max())
+        folga = 0.04 * (vmax - vmin)
+        ylim = (vmin - (folga if vmin < 0 else 0), vmax + folga)
+        print(f"Escala comum do eixo y: {ylim[0]:g} a {ylim[1]:g} {unidade}")
     (saida / "por_mes").mkdir(parents=True, exist_ok=True)
 
     with PdfPages(saida / f"boxplots_{nome_pdf}_{ANO}.pdf") as pdf:
@@ -131,7 +153,7 @@ def main():
             fig, axes = plt.subplots(nrows, ncols, squeeze=False,
                                      figsize=(7 * ncols, 4 * nrows))
             for ax, sub in zip(axes.flat, ativos):
-                desenhar_boxplot(ax, dados_mes, sub, unidade)
+                desenhar_boxplot(ax, dados_mes, sub, unidade, ylim)
                 ax.set_title(sub, loc="left", fontweight="bold")
             for ax in list(axes.flat)[len(ativos):]:
                 ax.set_visible(False)
@@ -147,7 +169,7 @@ def main():
                 pasta = saida / "individuais" / sub.replace(" ", "_").replace(".", "")
                 pasta.mkdir(parents=True, exist_ok=True)
                 fig, ax = plt.subplots(figsize=(10, 4.5))
-                desenhar_boxplot(ax, dados_mes, sub, unidade)
+                desenhar_boxplot(ax, dados_mes, sub, unidade, ylim)
                 ax.set_title(f"{titulo} — {rotulo} — {sub}", loc="left",
                              fontweight="bold", fontsize=12)
                 fig.tight_layout()
